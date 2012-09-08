@@ -57,4 +57,3 @@ class WordSearch
     end
   end
 end
-

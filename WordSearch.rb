@@ -1,10 +1,16 @@
+require "colorize"
+
 class WordSearch
   attr_reader :puzzle, :letter_positions, :word_list
 
   def initialize(puzzle_file, word_list_file)
     @puzzle = []
+    @word_list = []
+
     @letter_frequency = {}
     @letter_positions = {}
+    @positions_in_solution = {}
+
     @line_length = 0
     @lines = 0
     load_puzzle(puzzle_file)
@@ -73,31 +79,39 @@ class WordSearch
       
       distance_to_first = word.index char
       gen = [0, 1, 0, -1, 1, 0, -1, 0, 1, 1, -1, 1, 1, -1, -1,-1].each
-      pos_list = @letter_positions[char]
       found = false
       
-      pos_list.each do |pos|
+      @letter_positions[char].each do |pos|
         next if found
         y, x = pos
         gen.rewind
-        
         [
          [y, x - distance_to_first], [y, x + distance_to_first], [y - distance_to_first, x],
          [y + distance_to_first, x], [y - distance_to_first, x - distance_to_first],
          [y + distance_to_first, x - distance_to_first],
          [y - distance_to_first, x + distance_to_first],
          [y + distance_to_first, x + distance_to_first]
-        ].each_with_index do |start_pos, pos_num|
+        ].each do |start_pos|
           next if found
           y_s, x_s = start_pos
           y_delta = gen.next
           x_delta = gen.next
           i = 0
           y_d, x_d = y_s, x_s
+          letter_pos = []
           while check_legal_position(y_d, x_d) && (@puzzle[y_d][x_d] == word[i])
+            letter_pos << [y_d, x_d]
             if i == (word.length - 1)
-              puts "Found #{word} from (#{y_s + 1}, #{x_s+1}) to (#{y_d + 1}, #{x_d+1})"
+              #puts "Found #{word} from (#{y_s + 1}, #{x_s + 1}) to (#{y_d + 1}, #{x_d + 1})"
               found = true
+              letter_pos.each do |solution_pos|
+                a, b = solution_pos
+                if @positions_in_solution[a]
+                  @positions_in_solution[a] = @positions_in_solution[a] << b
+                else
+                  @positions_in_solution[a] = [b]
+                end
+              end
               break
             end
             y_d += y_delta
@@ -110,4 +124,20 @@ class WordSearch
     end
   end
 
+  def print_puzzle
+    @puzzle.each_with_index do |line, y|
+      puts
+      line.each_char.to_a.each_with_index do |char, x|
+        if @positions_in_solution[y]
+          if @positions_in_solution[y].include? x
+            print "#{char.colorize(:green)} "
+            next
+          end
+        end
+        print "#{char} "
+      end
+    end
+    puts
+  end
+  
 end

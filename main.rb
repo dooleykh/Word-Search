@@ -10,3 +10,4 @@ word_list_file = "./Testing/wordlist.txt"
 ws = WordSearch.new(puzzle_file, word_list_file)
 
 ws.search
+ws.print_puzzle

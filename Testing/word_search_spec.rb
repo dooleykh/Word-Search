@@ -40,7 +40,7 @@ describe WordSearch do
       ws = WordSearch.new('puzzle.txt', 'wordlist.txt')
       ws.word_list.should satisfy do |word_list|
         word_list.each do |word|
-          .should eql(line.upcase)
+          word.should eql(word.upcase)
         end
       end     
     end
@@ -48,8 +48,8 @@ describe WordSearch do
     it "should contain no spaces" do
       ws = WordSearch.new('puzzle.txt', 'wordlist.txt')
       ws.word_list.should satisfy do |word_list|
-        word_list.each do |line|
-          line.should eql(line.gsub(' ', ''))
+        word_list.each do |word|
+         word.should eql(word.gsub(' ', ''))
         end
       end     
  

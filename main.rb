@@ -9,4 +9,4 @@ print "Input the file path contianing the word list: "
 word_list_file = "./Testing/wordlist.txt"
 ws = WordSearch.new(puzzle_file, word_list_file)
 
-puts ws.puzzle.size
+ws.search

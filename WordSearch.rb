@@ -7,24 +7,42 @@ class WordSearch
     @puzzle = []
     @letter_frequency = Hash.new {|h, k| h[k] = 0}
     @letter_positions = Hash.new {|h, k| h[k] = []}
-    @positions_in_solution = Hash.new {|h, k| h[k] = []}
-    @word_list = load_word_list(word_list_file)
+    @pos_in_sol = Hash.new {|h, k| h[k] = []}
     @verbose = v
-
+    
     load_puzzle(puzzle_file)
-    @line_length = @puzzle[0].size 
+    @length = @puzzle[0].size 
     @lines = @puzzle.size - 1
+
+    @word_list = File.readlines(word_list_file).
+      map{|word| word.chomp.upcase.gsub(' ', '')}.
+      sort_by {|word| word.length}.reverse
   end
   
   def check_legal_position(row, col)
-    return ((0..@lines).include?(row) && (0..@line_length).include?(col))
+    return ((0..@lines).include?(row) && (0..@length).include?(col))
   end
 
+  def is_unique?(letter_pos)
+    unique = []
+    letter_pos.each do |char|
+      y, x = char
+      if @pos_in_sol.has_key?(y) && @pos_in_sol[y].include?(x)
+        unique << false
+        next
+      end
+      unique << true
+    end
+    unique.reduce(false) {|word, char| word | char}
+  end
+  
   def load_puzzle(puzzle_file)
     File.readlines(puzzle_file).each_with_index do |line, y|
-      line.upcase!.chomp!.each_char.to_a.each_with_index do |char, x|
+      x = 0
+      line.upcase!.chomp!.each_char do |char|
         @letter_frequency[char] = @letter_frequency[char] + 1
         @letter_positions[char] = @letter_positions[char] << [y, x]
+        x += 1
       end
       if !(@puzzle.empty?)
         if line.size != @puzzle[0].size
@@ -33,51 +51,56 @@ class WordSearch
       end
       @puzzle << line
     end
- end
-  
-  def load_word_list (word_list_file)
-    File.readlines(word_list_file).
-      map{|word| word.chomp.upcase.gsub(' ', '')}.sort_by {|x| x.length}.reverse
   end
 
-  def search
-    @word_list.each do |word|
-      not_in_puzzle = false
-      char = word[0]
-      word.each_char do |c|
-        if 0 != @letter_frequency[c] #Default value if key (c) isn't in hash
-          char = (@letter_frequency[char] > @letter_frequency[c]) ? char : c
-        else
-          puts "The puzzle does not contain #{word}"
-          not_in_puzzle = true
-          break
-        end
+  def word_in_puzzle(word)
+    char = word[0]
+    word.each_char do |c|
+      if @letter_frequency.has_key?(c)
+        char = (@letter_frequency[char] > @letter_frequency[c]) ? char : c
+      else
+        char = ''
+        break
       end
-      next if not_in_puzzle
-      
-      d = word.index(char) #Distance from least common character to first
-      gen =
-        [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [-1, 1], [1, -1], [-1,-1]].each
+    end
+    char
+  end
+
+  def start_pos_array(y, x, d)
+    [[y, x - d], [y, x + d], [y - d, x], [y + d, x], [y - d, x - d],
+     [y + d, x - d], [y - d, x + d], [y + d, x + d]]
+  end
+  
+  def search
+    deltas = [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [-1, 1], [1, -1], [-1,-1]].
+      each
+    @word_list.each do |word|
+      char = word_in_puzzle(word)
+      if char == ''
+        puts "#{word} is not in the puzzle"
+        next
+      end
+
       found = false
       @letter_positions[char].each do |pos|
         break if found
         y, x = pos
-        gen.rewind
-        [[y, x - d], [y, x + d], [y - d, x], [y + d, x], [y - d, x - d],
-         [y + d, x - d], [y - d, x + d], [y + d, x + d]].each do |start_pos|
+        deltas.rewind
+        start_pos_array(y, x, word.index(char)).each do |start_pos|
           break if found
           y_i, x_i = start_pos
-          y_delta, x_delta = gen.next
+          y_delta, x_delta = deltas.next
           i = 0
           letter_pos = []
           while (check_legal_position(y_i, x_i) && @puzzle[y_i][x_i] == word[i])
             letter_pos << [y_i, x_i]
             if i == (word.length - 1)
+              break if !(is_unique?(letter_pos))
               puts "#{word}: (#{y}, #{x}) to (#{y_i}, #{x_i})" if @verbose
               found = true
               letter_pos.each do |solution_pos|
                 a, b = solution_pos
-                @positions_in_solution[a] = @positions_in_solution[a] << b
+                @pos_in_sol[a] = @pos_in_sol[a] << b
               end
               break
             end
@@ -93,17 +116,16 @@ class WordSearch
   
   def print_puzzle
     @puzzle.each_with_index do |line, y|
-      line.each_char.to_a.each_with_index do |char, x|
-        if @positions_in_solution[y]
-          if @positions_in_solution[y].include?(x)
-            print "#{char.colorize(:green)}  "
-            next
-          end
+      x = 0
+      line.each_char do |char|
+        if  @pos_in_sol.has_key?(y) && @pos_in_sol[y].include?(x)
+         print "#{char.colorize(:green)}  "
+        else
+          print "#{char}  "
         end
-        print "#{char}  "
+        x += 1
       end
       puts
     end
-    puts
   end
 end

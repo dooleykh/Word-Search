@@ -17,7 +17,8 @@ else
 end
 
 if !(File.file?(puzzle_file) && File.file?(word_list_file))
-  raise "One or both files can't be read"
+  raise "One or both files can't be read
+    (Check that input is {puzzle, word list, option} and that the files exist.)"
 end
 
 ws = WordSearch.new(puzzle_file, word_list_file, verbose)

@@ -20,7 +20,7 @@ class WordSearch
   end
   
   def check_legal_position(row, col)
-    return ((0..@lines).include?(row) && (0..@length).include?(col))
+    ((0..@lines).include?(row) && (0..@length).include?(col))
   end
 
   def is_unique?(letter_pos)
@@ -33,7 +33,7 @@ class WordSearch
       end
       unique << true
     end
-    unique.reduce(false) {|word, char| word | char}
+    unique.reduce(true) {|word, char| word | char}
   end
   
   def load_puzzle(puzzle_file)
@@ -80,13 +80,11 @@ class WordSearch
         puts "#{word} is not in the puzzle"
         next
       end
-
       found = false
       @letter_positions[char].each do |pos|
         break if found
-        y, x = pos
         deltas.rewind
-        start_pos_array(y, x, word.index(char)).each do |start_pos|
+        start_pos_array(pos[0], pos[1], word.index(char)).each do |start_pos|
           break if found
           y_i, x_i = start_pos
           y_delta, x_delta = deltas.next
@@ -96,7 +94,7 @@ class WordSearch
             letter_pos << [y_i, x_i]
             if i == (word.length - 1)
               break if !(is_unique?(letter_pos))
-              puts "#{word}: (#{y}, #{x}) to (#{y_i}, #{x_i})" if @verbose
+              puts "#{word}: (#{start_pos[0]}, #{start_pos[1]}) to (#{y_i}, #{x_i})" if @verbose
               found = true
               letter_pos.each do |solution_pos|
                 a, b = solution_pos
@@ -119,7 +117,7 @@ class WordSearch
       x = 0
       line.each_char do |char|
         if  @pos_in_sol.has_key?(y) && @pos_in_sol[y].include?(x)
-         print "#{char.colorize(:green)}  "
+          print "#{char.colorize(:green)}  "
         else
           print "#{char}  "
         end

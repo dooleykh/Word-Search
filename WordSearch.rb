@@ -8,21 +8,22 @@ class WordSearch
     @letter_frequency = Hash.new {|h, k| h[k] = 0}
     @letter_positions = Hash.new {|h, k| h[k] = []}
     @pos_in_sol = Hash.new {|h, k| h[k] = []}
+    @deltas = [[0, 1], [0, -1], [1, 0], [-1, 0],
+               [1, 1], [-1, 1], [1, -1], [-1,-1]].each
     @verbose = v
-    
     load_puzzle(puzzle_file)
     @length = @puzzle[0].size 
     @lines = @puzzle.size - 1
 
+    #Sort word list by size to avoid potential substring problem
+    #(Where a smaller word is a complete substring of a larger word
+    #that appears before it in the puzzle)
     @word_list = File.readlines(word_list_file).
       map{|word| word.chomp.upcase.gsub(' ', '')}.
       sort_by {|word| word.length}.reverse
   end
-  
-  def check_legal_position(row, col)
-    ((0..@lines).include?(row) && (0..@length).include?(col))
-  end
 
+  #Check for substring problem
   def is_unique?(letter_pos)
     unique = []
     letter_pos.each do |char|
@@ -33,7 +34,7 @@ class WordSearch
       end
       unique << true
     end
-    unique.reduce(true) {|word, char| word | char}
+    unique.reduce(false) {|word, char| word | char}
   end
   
   def load_puzzle(puzzle_file)
@@ -53,7 +54,7 @@ class WordSearch
     end
   end
 
-  def word_in_puzzle(word)
+  def least_frequent(word)
     char = word[0]
     word.each_char do |c|
       if @letter_frequency.has_key?(c)
@@ -66,38 +67,37 @@ class WordSearch
     char
   end
 
-  def start_pos_array(y, x, d)
+  def first_letter_pos(y, x, d)
     [[y, x - d], [y, x + d], [y - d, x], [y + d, x], [y - d, x - d],
      [y + d, x - d], [y - d, x + d], [y + d, x + d]]
   end
   
   def search
-    deltas = [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [-1, 1], [1, -1], [-1,-1]].
-      each
     @word_list.each do |word|
-      char = word_in_puzzle(word)
+      char = least_frequent(word)
       if char == ''
         puts "#{word} is not in the puzzle"
         next
       end
       found = false
-      @letter_positions[char].each do |pos|
-        break if found
-        deltas.rewind
-        start_pos_array(pos[0], pos[1], word.index(char)).each do |start_pos|
+      @letter_positions[char].each do |pos_char|
+        next if found
+        @deltas.rewind
+        pos_list = first_letter_pos(pos_char[0], pos_char[1], word.index(char))
+        pos_list.each do |pos|
           break if found
-          y_i, x_i = start_pos
-          y_delta, x_delta = deltas.next
+          y_i, x_i = pos
+          y_delta, x_delta = @deltas.next
           i = 0
-          letter_pos = []
-          while (check_legal_position(y_i, x_i) && @puzzle[y_i][x_i] == word[i])
-            letter_pos << [y_i, x_i]
-            if i == (word.length - 1)
-              break if !(is_unique?(letter_pos))
-              puts "#{word}: (#{start_pos[0]}, #{start_pos[1]}) to (#{y_i}, #{x_i})" if @verbose
+          potential_sol = []
+          while (0..@lines).include?(y_i) && (0..@length).include?(x_i)
+            break if @puzzle[y_i][x_i] != word[i]
+            potential_sol << [y_i, x_i]
+            if i == (word.length - 1) && is_unique?(potential_sol)
+              puts "#{word}: (#{pos[0]}, #{pos[1]}) to (#{y_i}, #{x_i})" if @verbose
               found = true
-              letter_pos.each do |solution_pos|
-                a, b = solution_pos
+              potential_sol.each do |sol|
+                a, b = sol
                 @pos_in_sol[a] = @pos_in_sol[a] << b
               end
               break
@@ -106,12 +106,12 @@ class WordSearch
             x_i += x_delta
             i += 1
           end
-        end  
-      end
-      puts "Failed to find #{word}" if not found
+        end
+      end  
+      puts "Failed to find #{word}" if !found
     end
   end
-  
+
   def print_puzzle
     @puzzle.each_with_index do |line, y|
       x = 0

@@ -1,13 +1,21 @@
 Word-Search
 ===========
 
-**A Ruby program designed to solve particularly large word searches.**
+**A Ruby script designed to solve word searches quickly and efficiently.**
 
-When searching for words in a word search, a common strategy is to scan the puzzle letter by letter, line by line, looking for the first letter of the word they're looking for. Once our aspiring word sleuth has located one such letter somewhere in the puzzle, he or she checks the surrounding letters, looking for the second letter in the word. If they're lucky, they find the word in its entirety and move on to the next challenge in the list. If not, off they go searching for the first letter again. Tedious, but effective nonetheless.
+If you're like me, you probably solve word searches in the same tedious manner every time:
 
-How, then, should a computer approach such a puzzle? Of course, it could follow the same approach as a human would, effectively applying a brute force solution to a puzzle. While this is great for small puzzles, very large puzzles (especially those with a long word list) will take a while. However, why not play to the computer's strengths? Since a computer must read in the whole puzzle before it can begin solving it (unlike a human), we should have it do something the majority of human puzzle solvers can't do:
+   1. Scan the puzzle from left to right, top to bottom looking for the first letter of the word.
+   2. Once you find the first letter, look around it to see if the following letter is next to it.
+   3. Continue until you find the word.
+   4. Continue until you've found all of the words.
 
-+   Note the position of each letter for fast lookup (read the puzzle once and mark positions)
-+   Search for words based on how common the letters in the word are in the puzzle
+Unlike us, computers, when properly leveraged, have a few advantages in solving a word search.
 
-By applying these two methods, we remove the bottleneck of searching through the puzzle for every word (instead consulting a hash table of positions, keyed by letter and generated during the initial file read) and gain the potential to significantly reduce the puzzle's sample space
+**Computers can note the position of every letter.**
+By keeping track of every position in the puzzle a certain letter appears as it reads in the puzzle, a computer has constant time access (O(1)) to a known position in the puzzle without having to scan through the puzzle each iteration.
+
+**Computers can keep track of how many times each letter appears in the puzzle**
+Knowing how often each letter occurs in the puzzle (once again as the puzzle is read) allows the computer to be smarter about how it searches. For example, words with letters or characters that don't appear in the puzzle can be thrown out immediately, instead of wasting time iterating over the puzzle looking for words which can't exist. Primarily, though, this allows the computer to shrink its search space by looking for a word based on its least common letter, not necessarily its first.
+
+By using the more sophisticated brute force method provided by these two concepts, Word-Search provides a solver that scales well as the puzzle grows in size and difficulty.

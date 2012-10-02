@@ -70,7 +70,7 @@ class WordSearch
       end
       found = false
       @letter_positions[char].each do |y_0, x_0|
-        next if found
+        break if found
         @deltas.rewind
         first_pos(y_0, x_0, word.index(char)).each do |y_i, x_i|
           break if found
